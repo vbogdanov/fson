@@ -38,7 +38,7 @@ will result in
 {
   "foo": {
     "bar":{
-      "config":"config.json contents
+      "config":"config.json contents"
     }
   },
   "exam":{
