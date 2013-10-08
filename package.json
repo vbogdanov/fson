@@ -1,0 +1,31 @@
+{
+  "name": "fson",
+  "version": "0.0.0",
+  "description": "fson ====",
+  "main": "src/fson.js",
+  "scripts": {
+    "test": "jasmine-node test/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/vbogdanov/fson.git"
+  },
+  "keywords": [
+    "json",
+    "fs",
+    "file",
+    "directory",
+    "configuration"
+  ],
+  "author": "Valeri Bogdanov",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/vbogdanov/fson/issues"
+  },
+  "dependencies": {
+    "async": "~0.2.9"
+  },
+  "devDependencies": {
+    "jasmine-node": "~1.11.0"
+  }
+}
