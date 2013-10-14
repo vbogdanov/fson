@@ -51,6 +51,7 @@ Example usage:
 -------------
 ```js
 var SETTINGS_PATH = '/etc/nodeApp';
-var settings = require('fson')(SETTINGS_PATH);
-//use settings
+require('fson')(SETTINGS_PATH, function (error, settings) {
+  //use settings
+});
 ```
