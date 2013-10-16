@@ -1,6 +1,6 @@
 {
   "name": "fson",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "fson ====",
   "main": "src/fson.js",
   "scripts": {
@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "async": "~0.2.9",
-    "nsconf": "0.0.0"
+    "nsconf": "~0.0.1"
   },
   "devDependencies": {
     "jasmine-node": "~1.11.0"

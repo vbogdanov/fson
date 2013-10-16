@@ -7,6 +7,7 @@
 var fson = require('../src/fson');
 var Path = require('path');
 var testPath  = Path.join(Path.dirname(module.filename), 'res');
+
 function res(name) {
   return Path.join(testPath, name);
 }
@@ -14,64 +15,94 @@ function res(name) {
 describe('fson', function () {
   'use strict';
 
-  it('reads a file as json and returns the contained data', function (next) {
-    fson(res('singleFile.json'), function (err, data) {
-      expect(data).toEqual({ test: true });
-      next();  
-    });
-  });
-
-  it('reads a directory as a javascript object', function (next) {
-    fson(res('simpleDir'), function (err, data) {
-      if (err) {
-        next(err);
+  var EXPECTATIONS = {
+    'singleFile.json': { test: true },
+    'simpleDir': { 'singleFile': { test: true }},
+    'complex': { 
+      'foo': { 
+        'singleFile': { test: true }
+      }, 'bar': {
+        'bar': 'value'
+      }, 'baz': {
+        'baz': 'value'
       }
-
-      expect(data).toEqual({ 'singleFile': { test: true }});
-      next();  
-    });
-  });
-
-  it('reads a complex directory as a javascript object', function (next) {
-    fson(res('complex'), function (err, data) {
-      if (err) {
-        console.error(err);
-        next(err);
-      }
-
-      expect(data).toEqual({ 
-        'foo': { 
-          'singleFile': { test: true }
-        }, 'bar': {
-          'bar': 'value'
-        }, 'baz': {
-          'baz': 'value'
-        }
-      });
-
-      next();  
-    });
-  });
-
-  it('breaks dotted names into namespace objects', function (next) {
-    fson(res('dotted'), function (err, data) {
-      if (err) {
-        console.error(err);
-        next(err);
-      }
-
-      expect(data).toEqual({
-        'dot':{
-          'ted': {
-            'fi':{
-              'le':true
-            }
+    },
+    'dotted': {
+      'dot':{
+        'ted': {
+          'fi':{
+            'le':true
           }
         }
-      });
+      }
+    }
+  };
 
-      next();
+  it('is a function', function () {
+    expect(fson).toEqual(jasmine.any(Function));
+  });
+
+  describe('async usage', function () {
+    for (var resource in EXPECTATIONS) {
+      it('reads ' + resource + ' and returns the contained data', function (next) {
+        var path = res(resource);
+        fson(path, function (err, data) {
+          if (err) {
+            console.error(err);
+            next(err);
+          }
+
+          expect(data).toEqual(EXPECTATIONS[resource]);
+          next();
+        });
+      });
+    }
+  });
+
+  describe('sync usage', function () {
+    for (var resource in EXPECTATIONS) {
+      it('reads ' + resource + ' and returns the contained data', function () {
+        var path = res(resource);
+        var data = fson(path);
+        expect(data).toEqual(EXPECTATIONS[resource]);
+      });
+    }
+  });
+
+  describe('sync for invalid parameters', function () {
+    it('throws at reading non-existing path', function () {
+      var path = 'not existin';
+      expect(function () {
+        fson(path);
+      }).toThrow();
+    }); 
+
+    it('throws at reading invalid json', function () {
+      var path = res('invalidJSON');
+      expect(function () {
+        fson(path);
+      }).toThrow();
     });
+
+  });
+
+  describe('async for invalid parameters', function (next) {
+    it('throws at reading non-existing path', function () {
+      var path = 'notExisting';
+      fson(path, function (err, data) {
+        expect(err).toEqual(jasmine.any(Error));
+        setTimeout(next, 0);
+      });
+    }); 
+
+    it('throws at reading invalid json', function (next) {
+      var path = res('invalidJSON');
+      fson(path, function (err, data) {
+        expect(err).toEqual(jasmine.any(Error));
+        next();
+      });
+    });
+
   });
 
 });

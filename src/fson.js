@@ -1,121 +1,117 @@
 module.exports = (function (Path, FS, async, NSConf) {
   'use strict';
 
-  function fson2(path, callback) {
-    if(typeof path !== 'string')
-      throw new Error("path must be string");
-    var async = typeof callback === 'function';
-    var state = new NSConf();
-    
-    if (async) {
-      read(path);
-    } else {
-      readSync(path, namespace);
-    }
-
-  }
-
   function fson(path, callback) {
     if(typeof path !== 'string')
       throw new Error("path must be string");
-
-    if (typeof callback !== 'function') {
-      return readSync(path);
-    }
     
+    var async = typeof callback === 'function';
+    var state = new NSConf();
     path = Path.normalize(path);
-    FS.stat(path, function (error, stat) {
-      if (error) callback(error, path);
+
+    if (async) {
+      read(path, '', state, function (err, state) {
+        callback(err, state && state.get && state.get(''));
+      });
+    } else {
+      readSync(path, '', state);
+      return state.get('');
+    }
+  }
+
+  function read(path, namespace, state, callback) {
+
+    FS.stat(path, function (err, stat) {
+      if (err) return callback(err);
       
       if (stat.isFile() && Path.extname(path) === '.json') {
-        readJSONFile(path, callback);
+        readJSONFile(path, namespace, state, callback);
       }
 
       if (stat.isDirectory()) {
-        readDirectory(path, callback);
+        readDirectory(path, namespace, state, callback);
       }
     });
   }
 
-  function readPath(path, callback) {
-    callback = pointedNameCallback(path, callback);
-    FS.stat(path, function (error, stat) {
-      if (error) callback(error, path);
+  function readSync(path, namespace, state){
+    var stat = FS.statSync(path);
       
-      if (stat.isFile() && Path.extname(path) === '.json') {
-        readJSONFile(path, callback);
-      }
+    if (stat.isFile() && Path.extname(path) === '.json') {
+      readJSONFileSync(path, namespace, state);
+    }
 
-      if (stat.isDirectory()) {
-        readDirectory(path, callback);
-      }
-
-    });
+    if (stat.isDirectory()) {
+      readDirectorySync(path, namespace, state);
+    }
   }
 
-  function readJSONFile(path, callback) {
+  function readJSONFile(path, namespace, state, callback) {
+    namespace = dropExtension(namespace, '.json');
+    
     FS.readFile(path, { 'encoding':'utf-8'}, function (err, data) {
-      if (err) callback(err, path);
+      if (err) return callback(err);
 
       try {
         var json = JSON.parse(data);
-        callback(null, json);
+        state.set(namespace, json);
+        callback(null, state);
       } catch (e) {
-        callback(e, path);
+        //TODO: check if nextTick(callback) will resolve the problem with jasmine
+        callback(e);
       }
     });
   }
+  
+  function readJSONFileSync(path, namespace, state) {
+    namespace = dropExtension(namespace, '.json');
+    var data = FS.readFileSync(path, { 'encoding':'utf-8'});
+    var json = JSON.parse(data);
+    state.set(namespace, json);
+  }
 
-  function readDirectory(path, callback) {
+
+  function readDirectory(path, namespace, state, callback) {
     FS.readdir(path, function (err, filenames) {
-      if (err) callback(err);
-
-      var result = {}; //the dir
-
-      var files = filenames.map(function (item) {
-        return Path.join(path, item);
-      });
-
-      async.map(files, readPath, function (err, datas) {
-        if (err) callback(err);
-
-        for (var i = 0; i < filenames.length; i ++) {
-          var name = properName(filenames[i]);
-          result[name] = datas[i];
-        }
-        callback(null, result);
-      });
+      if (err) return callback(err);
+      async.map(
+          filenames, 
+          function (filename, _callback) {
+            var _path = Path.join(path, filename);
+            var _namespace = joinNamespace(namespace, filename);
+            read(_path, _namespace, state, _callback);
+          }, 
+          function (err, datas) {
+            if (err) return callback(err);
+            callback(null, state);
+          }
+      );
 
     });
   }
 
-  function properName(file) {
-    var i = file.indexOf('.');
-    if (i === -1)
-      return file;
-    return file.substr(0, i);
+  function readDirectorySync(path, namespace, state) {
+    var _path, _namespace;
+    var filenames = FS.readdirSync(path);
+    for (var i = 0; i < filenames.length; i++) {
+      var filename = filenames[i];
+      _path = Path.join(path, filename);
+      _namespace = joinNamespace(namespace, filename);
+      readSync(_path, _namespace, state);
+    }
   }
 
-  function pointedNameCallback(path, callback) {
-    var name = Path.basename(path, '.json');
-    if (name.lastIndexOf('.') === -1)
-      return callback;
+  function joinNamespace(base, addition) {
+    return base === ''? addition: base + '.' + addition;
+  }
 
-    var arr = name.split('.');
-    var result = {};
-    var current = result;
-    var n = arr[0];
-    for (var i = 1; i < arr.length - 1; i ++) {
-      n = arr[i];
-      current[n] = {};
-      current = current[n];
+  function dropExtension(namespace, extension) {
+    var el = extension.length;
+    var extStartInd = namespace.length - el;
+    if (namespace.substr(extStartInd) === extension) {
+      return namespace.substr(0, extStartInd);
     }
-    n = arr[arr.length - 1];
-
-    return function (err, data) {
-      current[n] = data;
-      callback(err, result);
-    };
+    return namespace;
   }
 
   return fson;
