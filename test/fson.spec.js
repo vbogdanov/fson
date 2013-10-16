@@ -86,12 +86,13 @@ describe('fson', function () {
 
   });
 
-  describe('async for invalid parameters', function (next) {
-    it('throws at reading non-existing path', function () {
+  describe('async for invalid parameters', function () {
+    it('throws at reading non-existing path', function (next) {
       var path = 'notExisting';
       fson(path, function (err, data) {
+        console.log(err, data);
         expect(err).toEqual(jasmine.any(Error));
-        setTimeout(next, 0);
+        next();
       });
     }); 
 
