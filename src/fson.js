@@ -1,8 +1,43 @@
-module.exports = (function function_name (Path, FS, async) {
+module.exports = (function (Path, FS, async, NSConf) {
   'use strict';
 
-  function read(path, callback) {
+  function fson2(path, callback) {
+    if(typeof path !== 'string')
+      throw new Error("path must be string");
+    var async = typeof callback === 'function';
+    var state = new NSConf();
+    
+    if (async) {
+      read(path);
+    } else {
+      readSync(path, namespace);
+    }
+
+  }
+
+  function fson(path, callback) {
+    if(typeof path !== 'string')
+      throw new Error("path must be string");
+
+    if (typeof callback !== 'function') {
+      return readSync(path);
+    }
+    
     path = Path.normalize(path);
+    FS.stat(path, function (error, stat) {
+      if (error) callback(error, path);
+      
+      if (stat.isFile() && Path.extname(path) === '.json') {
+        readJSONFile(path, callback);
+      }
+
+      if (stat.isDirectory()) {
+        readDirectory(path, callback);
+      }
+    });
+  }
+
+  function readPath(path, callback) {
     callback = pointedNameCallback(path, callback);
     FS.stat(path, function (error, stat) {
       if (error) callback(error, path);
@@ -26,7 +61,6 @@ module.exports = (function function_name (Path, FS, async) {
         var json = JSON.parse(data);
         callback(null, json);
       } catch (e) {
-        console.error(e);
         callback(e, path);
       }
     });
@@ -42,7 +76,7 @@ module.exports = (function function_name (Path, FS, async) {
         return Path.join(path, item);
       });
 
-      async.map(files, read, function (err, datas) {
+      async.map(files, readPath, function (err, datas) {
         if (err) callback(err);
 
         for (var i = 0; i < filenames.length; i ++) {
@@ -84,5 +118,5 @@ module.exports = (function function_name (Path, FS, async) {
     };
   }
 
-  return read;
-}) (require('path'), require('fs'), require('async'));
+  return fson;
+}) (require('path'), require('fs'), require('async'), require('nsconf'));

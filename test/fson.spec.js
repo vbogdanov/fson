@@ -54,16 +54,18 @@ describe('fson', function () {
   });
 
   it('breaks dotted names into namespace objects', function (next) {
-    fson(res('dot.ted'), function (err, data) {
+    fson(res('dotted'), function (err, data) {
       if (err) {
         console.error(err);
         next(err);
       }
 
       expect(data).toEqual({
-        'ted': {
-          'fi':{
-            'le':true
+        'dot':{
+          'ted': {
+            'fi':{
+              'le':true
+            }
           }
         }
       });

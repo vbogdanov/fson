@@ -23,7 +23,8 @@
     "url": "https://github.com/vbogdanov/fson/issues"
   },
   "dependencies": {
-    "async": "~0.2.9"
+    "async": "~0.2.9",
+    "nsconf": "0.0.0"
   },
   "devDependencies": {
     "jasmine-node": "~1.11.0"
