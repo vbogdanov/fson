@@ -90,7 +90,6 @@ describe('fson', function () {
     it('throws at reading non-existing path', function (next) {
       var path = 'notExisting';
       fson(path, function (err, data) {
-        console.log(err, data);
         expect(err).toEqual(jasmine.any(Error));
         next();
       });
